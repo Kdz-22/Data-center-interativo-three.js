@@ -1,0 +1,58 @@
+[gd_scene load_steps=8 format=3 uid="uid://dl5b2mfkq1qlj"]
+
+[ext_resource type="Script" path="res://server_racks/server_rack.gd" id="1_2d56b"]
+[ext_resource type="Material" path="res://server_racks/material_teal_server_rack.tres" id="2_6b8cb"]
+[ext_resource type="ArrayMesh" uid="uid://drkeyrcdhh7gb" path="res://server_racks/server_rack.obj" id="3_57t55"]
+[ext_resource type="PackedScene" path="res://server_racks/server.tscn" id="4_xh0x7"]
+[ext_resource type="ArrayMesh" uid="uid://d1ew51aug5hbu" path="res://server_racks/server_rack_wrecked.obj" id="5_4q8kd"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ro728"]
+size = Vector3(2, 3, 2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ot0e3"]
+size = Vector3(2, 3, 2)
+
+[node name="server_rack" type="StaticBody3D"]
+script = ExtResource("1_2d56b")
+
+[node name="collider_upper" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.5, 0)
+shape = SubResource("BoxShape3D_ro728")
+
+[node name="collider_lower" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+shape = SubResource("BoxShape3D_ot0e3")
+
+[node name="rack_mesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
+material_override = ExtResource("2_6b8cb")
+mesh = ExtResource("3_57t55")
+
+[node name="servers" type="Node3D" parent="rack_mesh"]
+
+[node name="server1" parent="rack_mesh/servers" instance=ExtResource("4_xh0x7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2, 0)
+
+[node name="server2" parent="rack_mesh/servers" instance=ExtResource("4_xh0x7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
+
+[node name="server3" parent="rack_mesh/servers" instance=ExtResource("4_xh0x7")]
+
+[node name="server4" parent="rack_mesh/servers" instance=ExtResource("4_xh0x7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="server5" parent="rack_mesh/servers" instance=ExtResource("4_xh0x7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+
+[node name="rack_mesh_destroyed" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
+material_override = ExtResource("2_6b8cb")
+mesh = ExtResource("5_4q8kd")
+
+[node name="servers" type="Node3D" parent="rack_mesh_destroyed"]
+
+[node name="server" parent="rack_mesh_destroyed/servers" instance=ExtResource("4_xh0x7")]
+transform = Transform3D(0.965926, -0.258819, 0, 0.258819, 0.965926, 0, 0, 0, 1, 0, -2.331, 0)
+
+[node name="server2" parent="rack_mesh_destroyed/servers" instance=ExtResource("4_xh0x7")]
+transform = Transform3D(0.866025, -0.482963, -0.12941, 0.5, 0.836516, 0.224144, 3.8567e-09, -0.258819, 0.965926, 0, -1.237, 0)

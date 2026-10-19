@@ -8,12 +8,13 @@
   "main": "index.js",
   "scripts": {
     "dev": "vite",
-    "build": "vite build"  
+    "build": "vite build"
   },
   "devDependencies": {
     "vite": "^8.3.4"
   },
   "dependencies": {
+    "lil-gui": "^0.21.0",
     "three": "^0.186.1"
   }
 }

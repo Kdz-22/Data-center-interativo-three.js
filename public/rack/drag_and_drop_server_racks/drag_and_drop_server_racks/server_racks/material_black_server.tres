@@ -1,0 +1,9 @@
+[gd_resource type="StandardMaterial3D" load_steps=2 format=3 uid="uid://cjfrd6le43ojv"]
+
+[ext_resource type="Texture2D" uid="uid://bambx30bqmta0" path="res://server_racks/marble_light.png" id="1_rxs4d"]
+
+[resource]
+albedo_color = Color(0.355314, 0.355314, 0.355313, 1)
+albedo_texture = ExtResource("1_rxs4d")
+uv1_scale = Vector3(2, 2, 2)
+uv1_triplanar = true

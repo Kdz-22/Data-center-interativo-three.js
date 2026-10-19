@@ -1,0 +1,10 @@
+
+Drag and drop instructions
+Tested in Godot 4.0.2
+
+	The folder [server_racks] can be drag and dropped into the root directory of a Godot project.
+	Then from within Godot you can drag the game object "server_rack.tscn" into any scene as needed.
+	In the Godot editor these game object will have a boolean "Is Destroyed", toggle this to TRUE to have the server rack start in a broken state
+	In code you can call "destroy_rack()" on any of these game object to switch it to a destroyed state.
+
+- HippoDevelopment

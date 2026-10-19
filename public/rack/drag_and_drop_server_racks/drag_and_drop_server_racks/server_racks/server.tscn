@@ -1,0 +1,14 @@
+[gd_scene load_steps=5 format=3 uid="uid://cdc5sflg73t1r"]
+
+[ext_resource type="Material" path="res://server_racks/material_black_server.tres" id="1_mtihw"]
+[ext_resource type="ArrayMesh" uid="uid://u5teq6ofbak0" path="res://server_racks/server.obj" id="2_0jv4k"]
+[ext_resource type="Material" path="res://server_racks/material_blackgreen_server_doodads.tres" id="3_6dp11"]
+[ext_resource type="ArrayMesh" uid="uid://bj5lt702ejrwx" path="res://server_racks/server_doodads.obj" id="4_keapv"]
+
+[node name="server" type="MeshInstance3D"]
+material_override = ExtResource("1_mtihw")
+mesh = ExtResource("2_0jv4k")
+
+[node name="doodads" type="MeshInstance3D" parent="."]
+material_override = ExtResource("3_6dp11")
+mesh = ExtResource("4_keapv")

@@ -1,0 +1,21 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://drkeyrcdhh7gb"
+path="res://.godot/imported/server_rack.obj-9bdea2c4da906e6d51e942bb703d82a9.mesh"
+
+[deps]
+
+files=["res://.godot/imported/server_rack.obj-9bdea2c4da906e6d51e942bb703d82a9.mesh"]
+
+source_file="res://server_racks/server_rack.obj"
+dest_files=["res://.godot/imported/server_rack.obj-9bdea2c4da906e6d51e942bb703d82a9.mesh", "res://.godot/imported/server_rack.obj-9bdea2c4da906e6d51e942bb703d82a9.mesh"]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
