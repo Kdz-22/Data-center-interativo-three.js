@@ -53,32 +53,45 @@ function spawnRobot(gltf, { x, z, rotY = 0, clip = 'Idle', height = 1.4 }) {
 }
 
 async function init() {
-  // Carrega o V2 uma vez e aplica a escala no original; os clones herdam a escala
-  const v2 = await loadServerV2Console();
-  fitToHeight(v2, 2.2);
+    // Carrega V2 e rack uma vez; a escala é aplicada nos originais e os clones herdam
+    const [v2, rack] = await Promise.all([loadServerV2Console(), loadRackAssembly()]);
+    fitToHeight(v2, 2.2);
+    fitToHeight(rack, 2.2);
 
-  const UNITS_PER_ROW = 14;
-  const SPACING = 0.8;   // largura do V2 (~0,73 m) + folga
-  const AISLE_Z = 2.5;   // distância do centro de cada fileira até o corredor central
+    const UNITS_PER_ROW = 14;
+    const SPACING = 0.8;        // largura de cada unidade (~0,73 m) + folga
+    const AISLE_Z = 2.5;        // centro da fileira de V2 até o corredor central
+    const RACK_OFFSET = 1.2;    // centro do V2 até o centro do rack atrás dele
+    const RACKS_FACE_WALL = true; // true: frente do rack para a parede; false: para o corredor
 
-  const rows = [
-    { z: -AISLE_Z, rotY: -Math.PI / 2 }, // frente voltada para +Z
-    { z: AISLE_Z, rotY: Math.PI / 2 },   // frente voltada para -Z
-  ];
-  const startX = -((UNITS_PER_ROW - 1) * SPACING) / 2; // centraliza a fileira na sala
+    const rows = [
+        // backDir: lado da parede (-1 = -Z, +1 = +Z)
+        { z: -AISLE_Z, v2RotY: -Math.PI / 2, rackRotY: -Math.PI / 2, backDir: -1 },
+        { z: AISLE_Z, v2RotY: Math.PI / 2, rackRotY: Math.PI / 2, backDir: 1 },
+    ];
+    const startX = -((UNITS_PER_ROW - 1) * SPACING) / 2; // centraliza a fileira na sala
 
-  for (const row of rows) {
-    for (let i = 0; i < UNITS_PER_ROW; i++) {
-      const unit = v2.clone(); // clone compartilha geometrias, materiais e texturas
-      unit.position.set(startX + i * SPACING, 0, row.z);
-      unit.rotation.y = row.rotY;
-      scene.add(unit);
+    for (const row of rows) {
+        for (let i = 0; i < UNITS_PER_ROW; i++) {
+            const x = startX + i * SPACING;
+
+            // V2 (frente para o corredor central)
+            const unit = v2.clone();
+            unit.position.set(x, 0, row.z);
+            unit.rotation.y = row.v2RotY;
+            scene.add(unit);
+
+            // Rack atrás do V2, alinhado no mesmo x
+            const r = rack.clone();
+            r.position.set(x, 0, row.z + row.backDir * RACK_OFFSET);
+            r.rotation.y = RACKS_FACE_WALL ? row.rackRotY : -row.rackRotY;
+            scene.add(r);
+        }
     }
-  }
 
-  const robotGltf = await loadRobot();
-  spawnRobot(robotGltf, { x: -3, z: 0.5, clip: 'Idle' });
-  spawnRobot(robotGltf, { x: -4.5, z: -0.5, rotY: Math.PI / 2, clip: 'Walking' });
+    const robotGltf = await loadRobot();
+    spawnRobot(robotGltf, { x: -3, z: 0.5, clip: 'Idle' });
+    spawnRobot(robotGltf, { x: -4.5, z: -0.5, rotY: Math.PI / 2, clip: 'Walking' });
 }
 init().catch(console.error);
 
