@@ -4,12 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Data Center Futurista</title>
-    <style>
-      html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
-      canvas { display: block; }
-    </style>
   </head>
   <body>
+    <div id="hud">
+      <strong>Clique na cena para controlar a câmera</strong>
+      <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> andar · <kbd>Shift</kbd> correr<br />
+      Mouse ou setas: olhar · <kbd>Esc</kbd> soltar o mouse<br />
+      <kbd>1</kbd>–<kbd>5</kbd> itens do diagnóstico · <kbd>H</kbd> painel
+    </div>
+    <div id="status">Carregando modelos…</div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
