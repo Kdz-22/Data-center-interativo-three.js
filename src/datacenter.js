@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
-import { loadRackAssembly, loadServerV2Console, loadRobot, fitToHeight } from './loaders.js';
+import { loadRackAssembly, loadServerV2Console, loadRobot, fitToHeight, loadServerGLTF } from './loaders.js';
 import { makeTexturesGlow } from './emissive.js';
 
 // Monta o conteúdo da sala: duas fileiras de servidores (V2 + rack) e os robôs.
@@ -87,6 +87,22 @@ export async function buildDataCenter(scene) {
 
     spawnRobot(robots, robotGltf, mixers, { x: -3, z: 0.5, clip: 'Idle' });
     spawnRobot(robots, robotGltf, mixers, { x: -4.5, z: -0.5, rotY: Math.PI / 2, clip: 'Walking' });
+
+    // Servidor em destaque ao lado do núcleo (glTF).
+    // Pesado (459 malhas, ~312 mil triângulos): não projeta sombra para não ser
+    // desenhado de novo nos shadow maps das SpotLights.
+    const featured = await loadServerGLTF(); // 13 MB: a primeira carga demora um pouco
+    fitToHeight(featured, 2.2); // mesma altura dos outros servidores
+    featured.rotation.y = Math.PI / 2;
+    featured.position.set(-7.5, 0, 4);
+    // A origem do modelo não fica na base: ele flutuava ~15 cm acima do piso.
+    // Medimos a caixa envolvente já na posição final e descemos até y = 0.
+    const box = new THREE.Box3().setFromObject(featured);
+    featured.position.y -= box.min.y;
+    featured.traverse((o) => {
+        if (o.isMesh) o.castShadow = false;
+    });
+    servers.add(featured);
 
     return { mixers, glow };
 }
