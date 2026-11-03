@@ -224,7 +224,12 @@ export function createDiagnostics({ scene, renderer, camera, controller, room })
             cameraHelper.update();
             renderer.setViewport(margin, margin, insetW, insetH);
             renderer.setScissor(margin, margin, insetW, insetH);
+            // Os shadow maps já foram gerados na viewport principal neste quadro.
+            // Sem isto o Three.js os recalcularia aqui de novo (dobrando o custo das sombras).
+            const shadowAutoUpdate = renderer.shadowMap.autoUpdate;
+            renderer.shadowMap.autoUpdate = false;
             renderer.render(scene, topCamera);
+            renderer.shadowMap.autoUpdate = shadowAutoUpdate;
         }
         renderer.setScissorTest(false);
 

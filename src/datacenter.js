@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
-import { loadRackAssembly, loadServerV2Console, loadRobot, fitToHeight, loadServerGLTF } from './loaders.js';
+import { loadRackAssembly, loadServerV2Console, loadRobot, fitToHeight } from './loaders.js';
 import { makeTexturesGlow } from './emissive.js';
 
 // Monta o conteúdo da sala: duas fileiras de servidores (V2 + rack) e os robôs.
@@ -87,11 +87,6 @@ export async function buildDataCenter(scene) {
 
     spawnRobot(robots, robotGltf, mixers, { x: -3, z: 0.5, clip: 'Idle' });
     spawnRobot(robots, robotGltf, mixers, { x: -4.5, z: -0.5, rotY: Math.PI / 2, clip: 'Walking' });
-
-    const featured = await loadServerGLTF(); // 13 MB e ~460 malhas: a primeira carga demora um pouco
-    featured.position.set(-7.5, 0, 4);
-    featured.rotation.y = Math.PI / 2; // ajuste até a frente apontar para o núcleo
-    servers.add(featured);
 
     return { mixers, glow };
 }
