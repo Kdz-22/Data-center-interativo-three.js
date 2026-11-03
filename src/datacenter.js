@@ -93,7 +93,7 @@ export async function buildDataCenter(scene) {
     // desenhado de novo nos shadow maps das SpotLights.
     const featured = await loadServerGLTF(); // 13 MB: a primeira carga demora um pouco
     fitToHeight(featured, 2.2); // mesma altura dos outros servidores
-    featured.rotation.y = Math.PI / 2;
+    featured.rotation.y = Math.PI; // frente (LEDs) virada para -Z, ou seja, para o núcleo e o corredor
     featured.position.set(-7.5, 0, 4);
     // A origem do modelo não fica na base: ele flutuava ~15 cm acima do piso.
     // Medimos a caixa envolvente já na posição final e descemos até y = 0.
@@ -103,6 +103,16 @@ export async function buildDataCenter(scene) {
         if (o.isMesh) o.castShadow = false;
     });
     servers.add(featured);
+
+    // Luz de destaque: o modelo não tem textura e os materiais são escuros (metal preto),
+    // e o canto onde ele fica não recebe as SpotLights do corredor. Sem esta luz ele
+    // vira uma silhueta preta. Ela vem do teto, à frente do servidor, inclinada para ele.
+    // Sem sombra: é só um realce, e evita mais uma passada de shadow map.
+    const featuredLight = new THREE.SpotLight(0xd6ecff, 60, 0, THREE.MathUtils.degToRad(25), 0.5, 2);
+    featuredLight.position.set(-7.5, 4.8, 2.2);
+    featuredLight.target.position.set(-7.5, 1.1, 4);
+    featuredLight.castShadow = false;
+    servers.add(featuredLight, featuredLight.target);
 
     return { mixers, glow };
 }

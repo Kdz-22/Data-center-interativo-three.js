@@ -47,7 +47,8 @@ export function createAICore() {
     electronA.position.x = 1.1; // mesmo raio do ringA
     electronAPivot.add(electronA);
     ringA.add(electronAPivot);
-    light.castShadow = false; // sombra de PointLight = 6 passadas (cubemap); ver JUSTIFICATIVAS.md
+    // Anel horizontal. Um torus completo girando no próprio eixo é simétrico e pareceria
+    // parado; a esfera (elétron) presa a ele é o que deixa a rotação visível.
     const ringB = new THREE.Mesh(
         new THREE.TorusGeometry(1.1, 0.04, 16, 96),
         ringMat
@@ -86,7 +87,7 @@ export function createAICore() {
     // A luz de verdade: o material emissivo sozinho NÃO ilumina os outros objetos
     const light = new THREE.PointLight(params.color, params.lightIntensity, 14, 2);
     light.position.copy(orb.position);
-    light.castShadow = false; // justificativa no Passo 6
+    light.castShadow = false; // sombra de PointLight = 6 passadas (cubemap); ver JUSTIFICATIVAS.md
 
     group.add(base, orb, ringA, ringBPivot, ringCPivot, light);
 
