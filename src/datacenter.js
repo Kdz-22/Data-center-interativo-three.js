@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
-import { loadRackAssembly, loadServerV2Console, loadRobot, fitToHeight } from './loaders.js';
+import { loadRackAssembly, loadServerV2Console, loadRobot, fitToHeight, loadServerGLTF } from './loaders.js';
+import { makeTexturesGlow } from './emissive.js';
 
 // Monta o conteúdo da sala: duas fileiras de servidores (V2 + rack) e os robôs.
 // Devolve os AnimationMixers dos robôs, que o loop principal atualiza com o delta do Timer.
@@ -56,7 +57,9 @@ export async function buildDataCenter(scene) {
     const AISLE_Z = 2.5;          // centro da fileira de V2 até o corredor central
     const RACK_OFFSET = 1.2;      // centro do V2 até o centro do rack atrás dele
     const RACKS_FACE_WALL = true; // true: frente do rack para a parede; false: para o corredor
-
+    // Emissivo nos materiais do V2. Feito no original, antes de clonar:
+    // os clones compartilham os materiais, então vale para todas as unidades.
+    const glow = makeTexturesGlow(v2, { Cube12_auv: 0.35, console_auv: 1.0 });
     const rows = [
         // backDir: lado da parede (-1 = -Z, +1 = +Z)
         { z: -AISLE_Z, v2RotY: -Math.PI / 2, rackRotY: -Math.PI / 2, backDir: -1 },
@@ -85,5 +88,10 @@ export async function buildDataCenter(scene) {
     spawnRobot(robots, robotGltf, mixers, { x: -3, z: 0.5, clip: 'Idle' });
     spawnRobot(robots, robotGltf, mixers, { x: -4.5, z: -0.5, rotY: Math.PI / 2, clip: 'Walking' });
 
-    return { mixers };
+    const featured = await loadServerGLTF(); // 13 MB e ~460 malhas: a primeira carga demora um pouco
+    featured.position.set(-7.5, 0, 4);
+    featured.rotation.y = Math.PI / 2; // ajuste até a frente apontar para o núcleo
+    servers.add(featured);
+
+    return { mixers, glow };
 }

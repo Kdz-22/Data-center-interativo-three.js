@@ -4,12 +4,15 @@ import { createRoom, ROOM } from './room.js';
 import { buildDataCenter } from './datacenter.js';
 import { FirstPersonController } from './firstPerson.js';
 import { createDiagnostics } from './diagnostics.js';
-
+import { createAICore, addAICoreGui } from './core.js';
+import { addEmissiveGui } from './emissive.js';
 // ------------------------------------------------------------------ cena e renderer
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x05070a);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.toneMapping = THREE.ACESFilmicToneMapping; // evita o emissivo estourar em branco
+renderer.toneMappingExposure = 1.0;
 renderer.setSize(innerWidth, innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); // telas 3x/4x custam muito e quase não melhoram
 document.body.appendChild(renderer.domElement);
@@ -26,15 +29,18 @@ const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 40
 camera.position.set(8.5, 1.7, 0);
 camera.lookAt(0, 1.4, 0);
 
-// ------------------------------------------------------------------ luzes provisórias
-// Só para os materiais não ficarem pretos. A iluminação de verdade é o M2.
-scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-const sun = new THREE.DirectionalLight(0xffffff, 2);
-sun.position.set(5, 10, 5);
-scene.add(sun);
+// ------------------------------------------------------------------ luzes
+// Luz base: preenchimento sem sombra, para a sala não ficar preta.
+// As SpotLights com sombra são da Letícia; o núcleo de IA vem logo abaixo.
+const hemi = new THREE.HemisphereLight(0x9fb8ff, 0x0b0d12, 0.6);
+scene.add(hemi);
 
 // ------------------------------------------------------------------ sala (ambiente base)
 scene.add(createRoom());
+// Núcleo de IA no fundo do corredor (-X), de frente para o ponto onde a câmera nasce
+const core = createAICore();
+core.group.position.set(-7.5, 0, 0);
+scene.add(core.group);
 
 // ------------------------------------------------------------------ navegação
 const WALL_MARGIN = 0.4; // distância mínima da câmera até a parede (m)
@@ -53,6 +59,13 @@ const controller = new FirstPersonController(camera, renderer.domElement, {
 // ------------------------------------------------------------------ modo diagnóstico
 const diagnostics = createDiagnostics({ scene, renderer, camera, controller, room: ROOM });
 
+// Painéis de iluminação no mesmo lil-gui do diagnóstico
+const gui = diagnostics.gui;
+addAICoreGui(gui, core);
+const baseFolder = gui.addFolder('Luz base');
+baseFolder.add(hemi, 'intensity', 0, 2).name('intensidade');
+baseFolder.addColor(hemi, 'color').name('cor do céu');
+baseFolder.add(renderer, 'toneMappingExposure', 0.2, 3).name('exposição');
 // ------------------------------------------------------------------ HUD
 const hud = document.getElementById('hud');
 const status = document.getElementById('status');
@@ -64,6 +77,7 @@ let mixers = [];
 buildDataCenter(scene)
     .then((result) => {
         mixers = result.mixers;
+        addEmissiveGui(gui, result.glow);
         diagnostics.refresh(); // aplica wireframe/culling/etc. também nos modelos recém-chegados
         status.remove();
     })
@@ -93,6 +107,7 @@ renderer.setAnimationLoop(() => {
     controller.update(delta);
     for (const m of mixers) m.update(delta);
 
+    core.update(timer.getElapsed(), delta);
     diagnostics.render(delta);
 });
 
