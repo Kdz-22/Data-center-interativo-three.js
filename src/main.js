@@ -6,6 +6,7 @@ import { FirstPersonController } from './firstPerson.js';
 import { createDiagnostics } from './diagnostics.js';
 import { createAICore, addAICoreGui } from './core.js';
 import { addEmissiveGui } from './emissive.js';
+import { createCeilingSpotLights, addSpotLightGui } from './lighting.js';
 // ------------------------------------------------------------------ cena e renderer
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x05070a);
@@ -13,6 +14,13 @@ scene.background = new THREE.Color(0x05070a);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.toneMapping = THREE.ACESFilmicToneMapping; // evita o emissivo estourar em branco
 renderer.toneMappingExposure = 1.0;
+
+// Sombras: o renderer só calcula shadow maps se isto estiver ligado.
+// PCFShadowMap compara a profundidade em vários pontos ao redor (filtro PCF),
+// o que suaviza a borda da sombra; o tamanho do filtro é o shadow.radius de cada luz.
+// (No Three.js r186 o PCFSoftShadowMap foi removido; o PCF com radius faz esse papel.)
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.setSize(innerWidth, innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); // telas 3x/4x custam muito e quase não melhoram
 document.body.appendChild(renderer.domElement);
@@ -34,6 +42,9 @@ camera.lookAt(0, 1.4, 0);
 // As SpotLights com sombra são da Letícia; o núcleo de IA vem logo abaixo.
 const hemi = new THREE.HemisphereLight(0x9fb8ff, 0x0b0d12, 0.6);
 scene.add(hemi);
+
+// SpotLights do teto, com sombra (src/lighting.js)
+const spots = createCeilingSpotLights(scene, ROOM);
 
 // ------------------------------------------------------------------ sala (ambiente base)
 scene.add(createRoom());
@@ -62,6 +73,7 @@ const diagnostics = createDiagnostics({ scene, renderer, camera, controller, roo
 // Painéis de iluminação no mesmo lil-gui do diagnóstico
 const gui = diagnostics.gui;
 addAICoreGui(gui, core);
+addSpotLightGui(gui, spots, renderer);
 const baseFolder = gui.addFolder('Luz base');
 baseFolder.add(hemi, 'intensity', 0, 2).name('intensidade');
 baseFolder.addColor(hemi, 'color').name('cor do céu');
