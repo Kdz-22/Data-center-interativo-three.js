@@ -47,8 +47,7 @@ export function createAICore() {
     electronA.position.x = 1.1; // mesmo raio do ringA
     electronAPivot.add(electronA);
     ringA.add(electronAPivot);
-    // Anel horizontal: arco aberto de 270°. Um torus completo girando no próprio eixo
-    // é simétrico e parece parado; o arco tem uma "ponta" que deixa a rotação visível.
+    light.castShadow = false; // sombra de PointLight = 6 passadas (cubemap); ver JUSTIFICATIVAS.md
     const ringB = new THREE.Mesh(
         new THREE.TorusGeometry(1.1, 0.04, 16, 96),
         ringMat
