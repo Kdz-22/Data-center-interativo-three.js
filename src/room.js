@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createFloorMaterial } from './materials.js';
 
 // Medidas definidas no M0 (em metros). Origem no centro do piso.
 // A sala ocupa x de -10 a 10 e z de -7 a 7.
@@ -10,7 +11,7 @@ export function createRoom({ width, depth, height } = ROOM) {
 
   // Um material por tipo de superfície (facilita o wireframe, o culling e as texturas do M3)
   const mats = {
-    floor: new THREE.MeshStandardMaterial({ color: 0x2b313a, roughness: 0.8, metalness: 0.2 }),
+    floor: createFloorMaterial(width, depth), // piso elevado com placas de 60 cm (src/materials.js)
     wall: new THREE.MeshStandardMaterial({ color: 0x3a4250, roughness: 0.9, metalness: 0.1 }),
     ceiling: new THREE.MeshStandardMaterial({ color: 0x1c2027, roughness: 0.9, metalness: 0.0 }),
   };
