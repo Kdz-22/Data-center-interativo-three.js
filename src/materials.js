@@ -97,19 +97,57 @@ function drawFloorTile(size, rand) {
   return canvas;
 }
 
+// Bump map: imagem em tons de cinza que representa ALTURA (branco = alto, preto = baixo).
+// O shader usa a variação de brilho entre pixels vizinhos para inclinar a normal,
+// e a luz passa a "ver" a junta como um sulco, sem mudar nenhum vértice da geometria.
+// Precisa ter exatamente o mesmo desenho do map, senão o relevo não bate com a cor.
+function drawFloorBump(size) {
+  const { canvas, ctx } = createCanvas(size);
+  const groove = Math.round(size * 0.012);
+  ctx.fillStyle = '#000';             // junta: fundo
+  ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = '#fff';             // placa: topo
+  ctx.fillRect(groove, groove, size - 2 * groove, size - 2 * groove);
+  return canvas;
+}
+
+// Roughness map: o Three.js lê o canal VERDE (G) e MULTIPLICA pelo material.roughness.
+// Placa (claro, ~0.55): plástico/laminado um pouco polido, mostra um reflexo fraco das luzes.
+// Junta (branco, 1.0): poeira e fresta, totalmente fosca.
+// O ruído deixa o reflexo levemente manchado, como um piso de verdade com uso.
+function drawFloorRoughness(size, rand) {
+  const { canvas, ctx } = createCanvas(size);
+  const groove = Math.round(size * 0.012);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = '#8c8c8c';
+  ctx.fillRect(groove, groove, size - 2 * groove, size - 2 * groove);
+  addNoise(ctx, size, 40, rand);
+  return canvas;
+}
+
 export function createFloorMaterial(width, depth) {
   const rand = seededRandom(42);
-  const tile = drawFloorTile(512, rand);
+  const size = 512;
 
   // A PlaneGeometry tem UV de 0 a 1 em toda a sua extensão.
   // Para cada placa medir 0,6 m: repeat = tamanho da sala / tamanho da placa.
   // 20 / 0,6 ≈ 33,3 e 14 / 0,6 ≈ 23,3 (a última fileira é cortada na parede, como num piso real).
-  const map = toTexture(tile, width / FLOOR_TILE, depth / FLOOR_TILE, true);
+  const rx = width / FLOOR_TILE;
+  const ry = depth / FLOOR_TILE;
+
+  // Os três mapas usam o mesmo repeat: a junta da cor, do relevo e da rugosidade coincidem.
+  const map = toTexture(drawFloorTile(size, rand), rx, ry, true);
+  const bumpMap = toTexture(drawFloorBump(size), rx, ry, false);
+  const roughnessMap = toTexture(drawFloorRoughness(size, rand), rx, ry, false);
 
   return new THREE.MeshStandardMaterial({
     map,
     color: 0xffffff, // branco: a cor vem toda da textura (color multiplica o map)
-    roughness: 0.8,
+    bumpMap,
+    bumpScale: 2.0,  // força do relevo; ajustável no gui (passo dos materiais do ambiente)
+    roughnessMap,
+    roughness: 0.9,  // multiplicado pelo roughnessMap: placa ≈ 0.5, junta = 0.9
     metalness: 0.2,
   });
 }
