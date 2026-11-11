@@ -22,4 +22,8 @@ export function addEmissiveGui(gui, glow) {
     const f = gui.addFolder('Materiais emissivos');
     if (glow.Cube12_auv) f.add(glow.Cube12_auv, 'emissiveIntensity', 0, 2).name('LEDs dos servidores');
     if (glow.console_auv) f.add(glow.console_auv, 'emissiveIntensity', 0, 3).name('tela do console');
+    if (glow.console_auv) {
+        f.add(glow.console_auv, 'roughness', 0, 1, 0.01).name('console roughness');
+        f.add(glow.console_auv, 'metalness', 0, 1, 0.01).name('console metalness');
+    }
 }

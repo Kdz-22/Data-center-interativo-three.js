@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { loadRackAssembly, loadServerV2Console, loadRobot, fitToHeight, loadServerGLTF } from './loaders.js';
 import { makeTexturesGlow } from './emissive.js';
-
+import { toTexture, createBrushedMetal } from './materials.js';
 // Monta o conteúdo da sala: duas fileiras de servidores (V2 + rack) e os robôs.
 // Devolve os AnimationMixers dos robôs, que o loop principal atualiza com o delta do Timer.
 
@@ -59,7 +59,20 @@ export async function buildDataCenter(scene) {
     const RACKS_FACE_WALL = true; // true: frente do rack para a parede; false: para o corredor
     // Emissivo nos materiais do V2. Feito no original, antes de clonar:
     // os clones compartilham os materiais, então vale para todas as unidades.
-    const glow = makeTexturesGlow(v2, { Cube12_auv: 0.35, console_auv: 1.0 });
+    // O MTLLoader gera MeshPhongMaterial (sem roughness). Converte o console para PBR,
+    // mantendo a textura. Feito antes do emissivo, para o gui apontar para o material novo.
+    const consoleMat = new THREE.MeshStandardMaterial({ name: 'console_auv', roughness: 1.0, metalness: 1.0 });
+    consoleMat.roughnessMap = toTexture(createBrushedMetal(), 2, 2, false);
+    v2.traverse((o) => {
+        if (!o.isMesh) return;
+        const list = [].concat(o.material).map((m) => {
+            if (m.name !== 'console_auv') return m;
+            consoleMat.map = m.map;
+            return consoleMat;
+        });
+        o.material = Array.isArray(o.material) ? list : list[0];
+    });
+    const glow = makeTexturesGlow(v2, { Cube12_auv: 0.33, console_auv: 0.64 });
     const rows = [
         // backDir: lado da parede (-1 = -Z, +1 = +Z)
         { z: -AISLE_Z, v2RotY: -Math.PI / 2, rackRotY: -Math.PI / 2, backDir: -1 },

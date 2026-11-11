@@ -132,7 +132,20 @@ function drawFloorRoughness(size, rand) {
   addNoise(ctx, size, 40, rand);
   return canvas;
 }
-
+// Metal escovado: riscos horizontais em tons de cinza (serve de bump e de roughness)
+export function createBrushedMetal() {
+  const size = 256;
+  const rand = seededRandom(5);
+  const { canvas, ctx } = createCanvas(size);
+  ctx.fillStyle = '#808080';
+  ctx.fillRect(0, 0, size, size);
+  for (let y = 0; y < size; y++) {
+    const g = 128 + (rand() - 0.5) * 90;
+    ctx.fillStyle = `rgb(${g},${g},${g})`;
+    ctx.fillRect(0, y, size, 1);
+  }
+  return canvas;
+}
 export function createFloorMaterial(width, depth) {
   const rand = seededRandom(42);
   const size = 512;
