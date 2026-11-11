@@ -94,9 +94,11 @@ controller.pointerLock.addEventListener('unlock', () => hud.classList.remove('lo
 
 // ------------------------------------------------------------------ modelos
 let mixers = [];
+let follower = null;
 buildDataCenter(scene)
     .then((result) => {
         mixers = result.mixers;
+        follower = result.follower;
         addEmissiveGui(gui, result.glow);
         diagnostics.refresh(); // aplica wireframe/culling/etc. também nos modelos recém-chegados
         status.remove();
@@ -126,6 +128,8 @@ renderer.setAnimationLoop(() => {
 
     controller.update(delta);
     for (const m of mixers) m.update(delta);
+
+    follower?.update(delta, camera.position);
 
     core.update(timer.getElapsed(), delta);
     diagnostics.render(delta);

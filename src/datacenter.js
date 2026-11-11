@@ -26,8 +26,46 @@ function spawnRobot(parent, gltf, mixers, { x, z, rotY = 0, clip = 'Idle', heigh
     const action = mixer.clipAction(clipData);
     action.time = Math.random() * clipData.duration; // evita robôs sincronizados
     action.play();
+    robot.userData.mixer = mixer; // o seguidor reaproveita este mixer para alternar Idle/Walking
     mixers.push(mixer);
     return robot;
+}
+
+// Robô que segue o jogador: gira e anda até o alvo, alternando Idle/Walking.
+function makeFollower(robot, gltf, { speed = 1.4, startDist = 2.5, stopDist = 1.8, turnSpeed = 4 } = {}) {
+    const mixer = robot.userData.mixer;
+    const idle = mixer.clipAction(THREE.AnimationClip.findByName(gltf.animations, 'Idle'));
+    const walk = mixer.clipAction(THREE.AnimationClip.findByName(gltf.animations, 'Walking'));
+    const dir = new THREE.Vector3();
+    let moving = false;
+
+    function setMoving(on) {
+        moving = on;
+        const [from, to] = on ? [idle, walk] : [walk, idle];
+        to.reset().play();
+        from.crossFadeTo(to, 0.3, false); // transição suave entre as animações
+    }
+
+    return {
+        update(delta, target) {
+            dir.set(target.x - robot.position.x, 0, target.z - robot.position.z);
+            const dist = dir.length();
+
+            // Histerese: começa a andar além de startDist e só para abaixo de stopDist.
+            // Com um limite único, o robô ficaria alternando Idle/Walking na borda.
+            if (!moving && dist > startDist) setMoving(true);
+            else if (moving && dist < stopDist) setMoving(false);
+
+            // Gira suavemente para o alvo (o robô olha para +Z, então atan2(x, z) dá o ângulo em Y).
+            // O módulo mantém a diferença em [-π, π] para girar pelo lado mais curto.
+            const diff = THREE.MathUtils.euclideanModulo(
+                Math.atan2(dir.x, dir.z) - robot.rotation.y + Math.PI, 2 * Math.PI) - Math.PI;
+            const maxTurn = turnSpeed * delta;
+            robot.rotation.y += THREE.MathUtils.clamp(diff, -maxTurn, maxTurn);
+
+            if (moving) robot.position.addScaledVector(dir.normalize(), speed * delta);
+        },
+    };
 }
 
 export async function buildDataCenter(scene) {
@@ -98,8 +136,12 @@ export async function buildDataCenter(scene) {
         }
     }
 
-    spawnRobot(robots, robotGltf, mixers, { x: -3, z: 0.5, clip: 'Idle' });
-    spawnRobot(robots, robotGltf, mixers, { x: -4.5, z: -0.5, rotY: Math.PI / 2, clip: 'Walking' });
+    // Parado ao lado do núcleo (o pedestal tem raio 1,5 m), virado para ele
+    spawnRobot(robots, robotGltf, mixers, { x: -7.5, z: -2.4, rotY: 0, clip: 'Idle' });
+
+    // Segue o jogador
+    const followerRobot = spawnRobot(robots, robotGltf, mixers, { x: -3, z: 0.5, clip: 'Idle' });
+    const follower = makeFollower(followerRobot, robotGltf);
 
     // Servidor em destaque ao lado do núcleo (glTF).
     // Pesado (459 malhas, ~312 mil triângulos): não projeta sombra para não ser
@@ -127,5 +169,5 @@ export async function buildDataCenter(scene) {
     featuredLight.castShadow = false;
     servers.add(featuredLight, featuredLight.target);
 
-    return { mixers, glow };
+    return { mixers, glow, follower };
 }
