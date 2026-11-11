@@ -8,6 +8,7 @@ import { createAICore, addAICoreGui } from './core.js';
 import { addEmissiveGui } from './emissive.js';
 import { createCeilingSpotLights, addSpotLightGui } from './lighting.js';
 import { createEnvironment, addMaterialsGui } from './materials.js';
+import { createCoolingPipes } from './cooling.js';
 // ------------------------------------------------------------------ cena e renderer
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x05070a);
@@ -50,6 +51,8 @@ const spots = createCeilingSpotLights(scene, ROOM);
 // ------------------------------------------------------------------ sala (ambiente base)
 const room = createRoom();
 scene.add(room);
+const cooling = createCoolingPipes(ROOM);
+scene.add(cooling.group);
 // Reflexos dos materiais PBR (environment map pré-filtrado, ver src/materials.js)
 createEnvironment(renderer, scene);
 // Núcleo de IA no fundo do corredor (-X), de frente para o ponto onde a câmera nasce
@@ -126,6 +129,8 @@ renderer.setAnimationLoop(() => {
 
     core.update(timer.getElapsed(), delta);
     diagnostics.render(delta);
+
+    cooling.update(delta);
 });
 
 // Acesso pelo console do navegador para depuração (ex.: __app.camera.position)
