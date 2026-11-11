@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createFloorMaterial } from './materials.js';
+import { createFloorMaterial, createWallMaterials, createCeilingMaterial } from './materials.js';
 
 // Medidas definidas no M0 (em metros). Origem no centro do piso.
 // A sala ocupa x de -10 a 10 e z de -7 a 7.
@@ -10,10 +10,13 @@ export function createRoom({ width, depth, height } = ROOM) {
   room.name = 'room';
 
   // Um material por tipo de superfície (facilita o wireframe, o culling e as texturas do M3)
+  // Texturas procedurais em src/materials.js
+  const walls = createWallMaterials(width, depth, height);
   const mats = {
-    floor: createFloorMaterial(width, depth), // piso elevado com placas de 60 cm (src/materials.js)
-    wall: new THREE.MeshStandardMaterial({ color: 0x3a4250, roughness: 0.9, metalness: 0.1 }),
-    ceiling: new THREE.MeshStandardMaterial({ color: 0x1c2027, roughness: 0.9, metalness: 0.0 }),
+    floor: createFloorMaterial(width, depth), // piso elevado com placas de 60 cm
+    wallLong: walls.long,                     // paredes de 20 m (fundo e frente)
+    wallShort: walls.short,                   // paredes de 14 m (laterais)
+    ceiling: createCeilingMaterial(width, depth), // forro acústico modular
   };
 
   function addPlane(name, w, h, material, position, rotation) {
@@ -28,10 +31,10 @@ export function createRoom({ width, depth, height } = ROOM) {
   // PlaneGeometry nasce virado para +Z, então cada plano é girado para olhar PARA DENTRO da sala
   addPlane('floor', width, depth, mats.floor, [0, 0, 0], [-Math.PI / 2, 0, 0]);          // olha para cima
   addPlane('ceiling', width, depth, mats.ceiling, [0, height, 0], [Math.PI / 2, 0, 0]);  // olha para baixo
-  addPlane('wall-back', width, height, mats.wall, [0, height / 2, -depth / 2], [0, 0, 0]);
-  addPlane('wall-front', width, height, mats.wall, [0, height / 2, depth / 2], [0, Math.PI, 0]);
-  addPlane('wall-left', depth, height, mats.wall, [-width / 2, height / 2, 0], [0, Math.PI / 2, 0]);
-  addPlane('wall-right', depth, height, mats.wall, [width / 2, height / 2, 0], [0, -Math.PI / 2, 0]);
+  addPlane('wall-back', width, height, mats.wallLong, [0, height / 2, -depth / 2], [0, 0, 0]);
+  addPlane('wall-front', width, height, mats.wallLong, [0, height / 2, depth / 2], [0, Math.PI, 0]);
+  addPlane('wall-left', depth, height, mats.wallShort, [-width / 2, height / 2, 0], [0, Math.PI / 2, 0]);
+  addPlane('wall-right', depth, height, mats.wallShort, [width / 2, height / 2, 0], [0, -Math.PI / 2, 0]);
 
   return room;
 }

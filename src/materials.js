@@ -11,6 +11,10 @@ import * as THREE from 'three';
 // Piso elevado de data center: placas padrão de 60 × 60 cm.
 // Embaixo delas passam cabos e o ar frio do resfriamento.
 export const FLOOR_TILE = 0.6;
+// Paredes revestidas com painéis metálicos de 1 × 1 m.
+export const WALL_PANEL = 1.0;
+// Forro modular (o mesmo padrão de 60 cm do piso, alinhado com ele).
+export const CEILING_TILE = 0.6;
 
 // Gerador pseudoaleatório com semente (mulberry32).
 // Com Math.random() a textura mudaria a cada recarga; com semente fixa ela é sempre igual.
@@ -149,5 +153,127 @@ export function createFloorMaterial(width, depth) {
     roughnessMap,
     roughness: 0.9,  // multiplicado pelo roughnessMap: placa ≈ 0.5, junta = 0.9
     metalness: 0.2,
+  });
+}
+
+// ------------------------------------------------------------------ paredes
+// Painel metálico: fresta escura na borda e quatro rebites nos cantos.
+function drawWallPanel(size, rand) {
+  const { canvas, ctx } = createCanvas(size);
+  const seam = Math.round(size * 0.01);
+
+  ctx.fillStyle = '#12161b';
+  ctx.fillRect(0, 0, size, size);
+
+  // Degradê vertical: um pouco mais claro em cima, como se a luz viesse do teto
+  const grad = ctx.createLinearGradient(0, 0, 0, size);
+  grad.addColorStop(0, '#404858');
+  grad.addColorStop(1, '#353c49');
+  ctx.fillStyle = grad;
+  ctx.fillRect(seam, seam, size - 2 * seam, size - 2 * seam);
+
+  drawRivets(ctx, size, '#5a6372');
+  addNoise(ctx, size, 8, rand);
+  return canvas;
+}
+
+function drawRivets(ctx, size, color) {
+  const r = size * 0.012;
+  const m = size * 0.05; // distância do rebite até a borda
+  ctx.fillStyle = color;
+  for (const [x, y] of [[m, m], [size - m, m], [m, size - m], [size - m, size - m]]) {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// Relevo da parede: fresta funda (preto), painel (cinza) e rebites salientes (branco)
+function drawWallBump(size) {
+  const { canvas, ctx } = createCanvas(size);
+  const seam = Math.round(size * 0.01);
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = '#9a9a9a';
+  ctx.fillRect(seam, seam, size - 2 * seam, size - 2 * seam);
+  drawRivets(ctx, size, '#fff');
+  return canvas;
+}
+
+// Devolve DOIS materiais de parede: as paredes têm comprimentos diferentes
+// (20 m e 14 m), então o repeat em U é diferente para cada uma.
+// texture.clone() cria outra textura com repeat próprio, mas reaproveita a mesma
+// imagem (Source): ela é enviada para a GPU uma vez só.
+export function createWallMaterials(width, depth, height) {
+  const rand = seededRandom(7);
+  const size = 512;
+  const baseMap = toTexture(drawWallPanel(size, rand), 1, 1, true);
+  const baseBump = toTexture(drawWallBump(size), 1, 1, false);
+
+  function make(length) {
+    const map = baseMap.clone();
+    const bumpMap = baseBump.clone();
+    // U acompanha o comprimento da parede, V acompanha a altura (5 m = 5 painéis)
+    map.repeat.set(length / WALL_PANEL, height / WALL_PANEL);
+    bumpMap.repeat.copy(map.repeat);
+    return new THREE.MeshStandardMaterial({
+      map,
+      bumpMap,
+      bumpScale: 1.5,
+      roughness: 0.6,  // metal pintado: reflexo difuso, não espelhado
+      metalness: 0.4,
+    });
+  }
+
+  return { long: make(width), short: make(depth) };
+}
+
+// ------------------------------------------------------------------ teto
+// Forro acústico: placa escura microperfurada, presa numa grade metálica (perfil "T").
+function drawCeilingTile(size, rand) {
+  const { canvas, ctx } = createCanvas(size);
+  const bar = Math.round(size * 0.02); // perfil T de ~1,2 cm
+
+  ctx.fillStyle = '#3b414b'; // grade metálica, mais clara que a placa
+  ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = '#1b1f26';
+  ctx.fillRect(bar, bar, size - 2 * bar, size - 2 * bar);
+
+  // Microfuros (absorção acústica): pontinhos em grade regular
+  ctx.fillStyle = '#0e1115';
+  const step = size / 24;
+  for (let y = bar + step; y < size - bar; y += step) {
+    for (let x = bar + step; x < size - bar; x += step) {
+      ctx.fillRect(x - 1.5, y - 1.5, 3, 3);
+    }
+  }
+
+  addNoise(ctx, size, 6, rand);
+  return canvas;
+}
+
+// Relevo do teto: a grade fica ABAIXO do plano da placa (salta para dentro da sala),
+// por isso a grade é branca (alta) e a placa é escura.
+function drawCeilingBump(size) {
+  const { canvas, ctx } = createCanvas(size);
+  const bar = Math.round(size * 0.02);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = '#333';
+  ctx.fillRect(bar, bar, size - 2 * bar, size - 2 * bar);
+  return canvas;
+}
+
+export function createCeilingMaterial(width, depth) {
+  const rand = seededRandom(99);
+  const size = 512;
+  const rx = width / CEILING_TILE;
+  const ry = depth / CEILING_TILE;
+  return new THREE.MeshStandardMaterial({
+    map: toTexture(drawCeilingTile(size, rand), rx, ry, true),
+    bumpMap: toTexture(drawCeilingBump(size), rx, ry, false),
+    bumpScale: 1.5,
+    roughness: 0.95, // material acústico: praticamente sem reflexo
+    metalness: 0.0,
   });
 }
