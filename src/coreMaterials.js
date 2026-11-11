@@ -90,6 +90,39 @@ export function createPedestalMaterial(color) {
   });
 }
 
+// ------------------------------------------------------------------ esfera: fluxo de dados
+// Mapa emissivo da esfera: faixas horizontais claras sobre um fundo cinza.
+// O fundo cinza (e não preto) mantém a esfera sempre acesa; as faixas são "pulsos"
+// de dados mais fortes. Ele é animado deslocando o UV (texture.offset) no update.
+//
+// O desenho só varia em V (altura). Isso é proposital: o IcosahedronGeometry gera UV
+// esférico (U = longitude, V = latitude), que tem uma emenda vertical em U.
+// Como a imagem é igual em qualquer U, a emenda não aparece.
+export function createOrbEmissiveMap() {
+  const W = 16;  // largura mínima: a imagem não muda em U
+  const H = 512;
+  const { canvas, ctx } = createCanvas(W, H);
+  const rand = seededRandom(1984);
+
+  ctx.fillStyle = '#7a7a7a'; // brilho base ≈ 0,2 em espaço linear (após a conversão sRGB)
+  ctx.fillRect(0, 0, W, H);
+
+  // Faixas com borda suave (degradê) de espessuras variadas
+  for (let i = 0; i < 9; i++) {
+    const y = rand() * H;
+    const t = 4 + rand() * 26;
+    const grad = ctx.createLinearGradient(0, y - t, 0, y + t);
+    grad.addColorStop(0, 'rgba(255,255,255,0)');
+    grad.addColorStop(0.5, 'rgba(255,255,255,1)');
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, y - t, W, 2 * t);
+  }
+
+  // repeat 2 em V: duas sequências de faixas da base ao topo da esfera
+  return toTexture(canvas, 1, 2, true);
+}
+
 // ------------------------------------------------------------------ casca de vidro
 // Uma esfera de vidro em volta do núcleo, como uma cápsula de contenção.
 //

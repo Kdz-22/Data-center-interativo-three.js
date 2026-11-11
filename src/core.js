@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createPedestalMaterial, createGlassShellMaterial } from './coreMaterials.js';
+import { createPedestalMaterial, createGlassShellMaterial, createOrbEmissiveMap } from './coreMaterials.js';
 
 export function createAICore() {
     const params = {
@@ -8,6 +8,8 @@ export function createAICore() {
         emissive: 2.0,      // brilho do material
         pulse: 0.2,         // amplitude da pulsação
         speed: 2.0,         // rad/s
+        flowSpeed: 0.15,    // M3: velocidade do fluxo de dados na esfera (repetições de UV por segundo)
+        pedestalGlow: 1.2,  // M3: brilho das trilhas do pedestal
     };
 
     const group = new THREE.Group();
@@ -29,6 +31,10 @@ export function createAICore() {
         roughness: 0.3,
         metalness: 0.2,
     });
+    // M3: o emissivo da esfera passa a ter um mapa (faixas de "dados") que corre pela superfície.
+    // emissive (ciano) × emissiveMap (cinza com faixas brancas) = ciano com faixas mais fortes.
+    const orbMap = createOrbEmissiveMap();
+    coreMat.emissiveMap = orbMap;
     const orb = new THREE.Mesh(new THREE.IcosahedronGeometry(0.7, 2), coreMat);
     orb.position.y = 1.9;
 
@@ -103,6 +109,11 @@ export function createAICore() {
         const k = 1 + params.pulse * Math.sin(elapsed * params.speed);
         light.intensity = params.lightIntensity * k;
         coreMat.emissiveIntensity = params.emissive * k;
+        pedestalMat.emissiveIntensity = params.pedestalGlow * k; // trilhas pulsam junto com o núcleo
+        // Animação de UV: deslocar o offset faz a textura "escorregar" sobre a malha,
+        // sem mexer em nenhum vértice. O % 1 evita que o número cresça para sempre
+        // (com RepeatWrapping, offset 1,0 é igual a 0,0).
+        orbMap.offset.y = (orbMap.offset.y + params.flowSpeed * delta) % 1;
         orb.rotation.y += 0.5 * delta;   // rad/s, independente de frame rate
         ringA.rotation.y += 0.8 * delta;
         ringBPivot.rotation.x -= 0.8 * delta;
@@ -112,7 +123,7 @@ export function createAICore() {
         electronBPivot.rotation.z -= 1.6 * delta;
     }
 
-    return { group, light, coreMat, ringMat, pedestalMat, shellMat, params, update };
+    return { group, light, coreMat, ringMat, pedestalMat, shell, shellMat, params, update };
 }
 
 // Pasta no lil-gui (use o mesmo objeto gui que já existe no projeto)
@@ -130,5 +141,18 @@ export function addAICoreGui(gui, core) {
     f.add(core.light, 'decay', 0, 4).name('decay');
     f.add(core.params, 'pulse', 0, 0.8).name('pulsação');
     f.add(core.params, 'speed', 0, 8).name('velocidade (rad/s)');
+
+    // M3: materiais do núcleo
+    const fm = f.addFolder('Materiais do núcleo');
+    fm.add(core.params, 'flowSpeed', -1, 1, 0.01).name('fluxo de dados (UV/s)');
+    fm.add(core.params, 'pedestalGlow', 0, 4, 0.05).name('brilho das trilhas');
+    fm.add(core.pedestalMat, 'roughness', 0, 1, 0.01).name('pedestal: roughness');
+    fm.add(core.pedestalMat, 'metalness', 0, 1, 0.01).name('pedestal: metalness');
+    fm.add(core.shell, 'visible').name('casca de vidro');
+    fm.add(core.shellMat, 'opacity', 0, 1, 0.01).name('vidro: opacidade');
+    fm.add(core.shellMat, 'roughness', 0, 1, 0.01).name('vidro: roughness');
+    fm.add(core.shellMat, 'clearcoat', 0, 1, 0.01).name('vidro: clearcoat');
+    fm.add(core.shellMat, 'ior', 1, 2.33, 0.01).name('vidro: ior');
+    fm.close();
     return f;
 }
