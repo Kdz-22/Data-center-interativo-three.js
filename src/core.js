@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createPedestalMaterial, createGlassShellMaterial } from './coreMaterials.js';
 
 export function createAICore() {
     const params = {
@@ -12,11 +13,10 @@ export function createAICore() {
     const group = new THREE.Group();
     group.name = 'ai-core';
 
-    // Pedestal escuro (não emissivo), dá contraste ao brilho
-    const base = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.3, 1.5, 0.5, 48),
-        new THREE.MeshStandardMaterial({ color: 0x14171c, roughness: 0.35, metalness: 0.85 })
-    );
+    // Pedestal de metal escuro, dá contraste ao brilho.
+    // M3: trilhas de circuito emissivas na mesma cor do núcleo (src/coreMaterials.js)
+    const pedestalMat = createPedestalMaterial(params.color);
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.5, 0.5, 48), pedestalMat);
     base.position.y = 0.25;
     base.castShadow = true;
     base.receiveShadow = true;
@@ -31,6 +31,13 @@ export function createAICore() {
     });
     const orb = new THREE.Mesh(new THREE.IcosahedronGeometry(0.7, 2), coreMat);
     orb.position.y = 1.9;
+
+    // Casca de vidro em volta da esfera (raio 0,85: entre a esfera e os anéis)
+    const shellMat = createGlassShellMaterial();
+    const shell = new THREE.Mesh(new THREE.SphereGeometry(0.85, 48, 32), shellMat);
+    shell.position.copy(orb.position);
+    shell.castShadow = false; // vidro quase transparente não deve fazer sombra sólida
+    shell.renderOrder = 1;    // desenhado depois do interior (objetos transparentes vão por último)
 
     // Anéis emissivos (compartilham o material)
     const ringMat = new THREE.MeshStandardMaterial({
@@ -89,7 +96,7 @@ export function createAICore() {
     light.position.copy(orb.position);
     light.castShadow = false; // sombra de PointLight = 6 passadas (cubemap); ver JUSTIFICATIVAS.md
 
-    group.add(base, orb, ringA, ringBPivot, ringCPivot, light);
+    group.add(base, orb, shell, ringA, ringBPivot, ringCPivot, light);
 
     // Chamar uma vez por quadro, com o delta do THREE.Timer
     function update(elapsed, delta) {
@@ -105,7 +112,7 @@ export function createAICore() {
         electronBPivot.rotation.z -= 1.6 * delta;
     }
 
-    return { group, light, coreMat, ringMat, params, update };
+    return { group, light, coreMat, ringMat, pedestalMat, shellMat, params, update };
 }
 
 // Pasta no lil-gui (use o mesmo objeto gui que já existe no projeto)
@@ -115,6 +122,7 @@ export function addAICoreGui(gui, core) {
         core.light.color.set(c);
         core.coreMat.emissive.set(c);
         core.ringMat.emissive.set(c);
+        core.pedestalMat.emissive.set(c); // trilhas do pedestal acompanham a cor do núcleo
     });
     f.add(core.params, 'lightIntensity', 0, 150).name('intensidade da luz');
     f.add(core.params, 'emissive', 0, 6).name('brilho emissivo');

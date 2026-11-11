@@ -19,7 +19,7 @@ export const CEILING_TILE = 0.6;
 
 // Gerador pseudoaleatório com semente (mulberry32).
 // Com Math.random() a textura mudaria a cada recarga; com semente fixa ela é sempre igual.
-function seededRandom(seed) {
+export function seededRandom(seed) {
   return () => {
     seed |= 0;
     seed = (seed + 0x6d2b79f5) | 0;
@@ -29,9 +29,11 @@ function seededRandom(seed) {
   };
 }
 
-function createCanvas(size) {
+// height é opcional: sem ele o canvas é quadrado
+export function createCanvas(size, height = size) {
   const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = size;
+  canvas.width = size;
+  canvas.height = height;
   return { canvas, ctx: canvas.getContext('2d') };
 }
 
@@ -51,7 +53,7 @@ function addNoise(ctx, size, amount, rand) {
 
 // Converte o canvas em textura repetível.
 // repeat = quantas vezes a imagem cabe na superfície (em cada eixo de UV).
-function toTexture(canvas, repeatX, repeatY, isColor) {
+export function toTexture(canvas, repeatX, repeatY, isColor) {
   const tex = new THREE.CanvasTexture(canvas);
   // RepeatWrapping: UV acima de 1 volta ao início da imagem (ladrilhamento).
   // O padrão (ClampToEdge) esticaria a última linha de pixels.
