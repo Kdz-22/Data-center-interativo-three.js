@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 // Materiais do ambiente (piso, paredes e teto).
 //
@@ -276,4 +277,81 @@ export function createCeilingMaterial(width, depth) {
     roughness: 0.95, // material acústico: praticamente sem reflexo
     metalness: 0.0,
   });
+}
+
+// ------------------------------------------------------------------ environment map
+// Por que: num material PBR (MeshStandardMaterial) o metal quase não tem cor própria;
+// o que dá aparência de metal é o REFLEXO do ambiente. Só com luzes pontuais, superfícies
+// com metalness alto ficam pretas, porque não há nada ao redor para refletir.
+//
+// RoomEnvironment é uma sala genérica (caixas claras) que vem com o Three.js.
+// O PMREMGenerator pré-filtra essa cena em vários níveis de desfoque (mipmaps):
+// material liso lê o nível nítido, material rugoso lê o desfocado. É isso que faz
+// o roughness mudar o reflexo de "espelho" para "fosco".
+// É gerado UMA vez no início; não tem custo por quadro como uma luz a mais.
+export function createEnvironment(renderer, scene, intensity = 0.25) {
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const envScene = new RoomEnvironment();
+  const envMap = pmrem.fromScene(envScene, 0.04).texture; // 0.04 = leve desfoque base
+  envScene.dispose(); // a cena auxiliar não é mais necessária depois de filtrada
+  pmrem.dispose();
+
+  // scene.environment: vale para TODOS os materiais PBR que não têm envMap próprio
+  // (inclusive os modelos carregados). NÃO é o fundo: scene.background continua escuro.
+  scene.environment = envMap;
+  // Intensidade baixa: a sala tem que continuar escura para o núcleo e os LEDs se destacarem.
+  // O RoomEnvironment é um ambiente claro; em 1.0 a sala pareceria um escritório iluminado.
+  scene.environmentIntensity = intensity;
+  return envMap;
+}
+
+// ------------------------------------------------------------------ painel lil-gui
+// mats = os materiais da sala (room.userData.materials), room = medidas da sala
+export function addMaterialsGui(gui, mats, scene, room) {
+  const f = gui.addFolder('Materiais do ambiente');
+
+  f.add(scene, 'environmentIntensity', 0, 1.5, 0.01).name('reflexos (env map)');
+
+  // Liga/desliga todos os mapas de textura de uma vez, para comparar
+  // "só cor e parâmetros" com "cor + relevo + rugosidade".
+  // Trocar um mapa por null muda o shader, por isso o needsUpdate.
+  const all = [mats.floor, mats.wallLong, mats.wallShort, mats.ceiling];
+  const saved = all.map((m) => ({ map: m.map, bumpMap: m.bumpMap, roughnessMap: m.roughnessMap }));
+  const state = { textures: true, floorTile: FLOOR_TILE };
+  f.add(state, 'textures').name('texturas ligadas').onChange((on) => {
+    all.forEach((m, i) => {
+      for (const key of ['map', 'bumpMap', 'roughnessMap']) m[key] = on ? saved[i][key] : null;
+      // Sem textura, color = branco ficaria branco puro: volta para a cor original do M1
+      if (m === mats.floor) m.color.set(on ? 0xffffff : 0x2b313a);
+      else if (m === mats.ceiling) m.color.set(on ? 0xffffff : 0x1c2027);
+      else m.color.set(on ? 0xffffff : 0x3a4250);
+      m.needsUpdate = true;
+    });
+  });
+
+  const ff = f.addFolder('Piso');
+  // Muda o tamanho da placa recalculando o repeat: mostra o mapeamento UV na prática
+  ff.add(state, 'floorTile', 0.2, 2, 0.05).name('tamanho da placa (m)').onChange((t) => {
+    for (const tex of [saved[0].map, saved[0].bumpMap, saved[0].roughnessMap]) {
+      tex.repeat.set(room.width / t, room.depth / t);
+    }
+  });
+  ff.add(mats.floor, 'roughness', 0, 1, 0.01).name('roughness');
+  ff.add(mats.floor, 'metalness', 0, 1, 0.01).name('metalness');
+  ff.add(mats.floor, 'bumpScale', 0, 6, 0.1).name('bumpScale');
+
+  // As duas paredes recebem o mesmo valor (objeto proxy para um único slider)
+  const wall = { roughness: mats.wallLong.roughness, metalness: mats.wallLong.metalness, bumpScale: mats.wallLong.bumpScale };
+  const setWalls = (key) => (v) => { mats.wallLong[key] = v; mats.wallShort[key] = v; };
+  const fw = f.addFolder('Paredes');
+  fw.add(wall, 'roughness', 0, 1, 0.01).name('roughness').onChange(setWalls('roughness'));
+  fw.add(wall, 'metalness', 0, 1, 0.01).name('metalness').onChange(setWalls('metalness'));
+  fw.add(wall, 'bumpScale', 0, 6, 0.1).name('bumpScale').onChange(setWalls('bumpScale'));
+
+  const fc = f.addFolder('Teto');
+  fc.add(mats.ceiling, 'roughness', 0, 1, 0.01).name('roughness');
+  fc.add(mats.ceiling, 'bumpScale', 0, 6, 0.1).name('bumpScale');
+
+  f.close(); // começa fechado para o painel não ficar enorme
+  return f;
 }

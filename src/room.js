@@ -36,5 +36,7 @@ export function createRoom({ width, depth, height } = ROOM) {
   addPlane('wall-left', depth, height, mats.wallShort, [-width / 2, height / 2, 0], [0, Math.PI / 2, 0]);
   addPlane('wall-right', depth, height, mats.wallShort, [width / 2, height / 2, 0], [0, -Math.PI / 2, 0]);
 
+  // Guarda os materiais no grupo para o painel do lil-gui conseguir alterá-los
+  room.userData.materials = mats;
   return room;
 }

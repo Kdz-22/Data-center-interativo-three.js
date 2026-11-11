@@ -7,6 +7,7 @@ import { createDiagnostics } from './diagnostics.js';
 import { createAICore, addAICoreGui } from './core.js';
 import { addEmissiveGui } from './emissive.js';
 import { createCeilingSpotLights, addSpotLightGui } from './lighting.js';
+import { createEnvironment, addMaterialsGui } from './materials.js';
 // ------------------------------------------------------------------ cena e renderer
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x05070a);
@@ -47,7 +48,10 @@ scene.add(hemi);
 const spots = createCeilingSpotLights(scene, ROOM);
 
 // ------------------------------------------------------------------ sala (ambiente base)
-scene.add(createRoom());
+const room = createRoom();
+scene.add(room);
+// Reflexos dos materiais PBR (environment map pré-filtrado, ver src/materials.js)
+createEnvironment(renderer, scene);
 // Núcleo de IA no fundo do corredor (-X), de frente para o ponto onde a câmera nasce
 const core = createAICore();
 core.group.position.set(-7.5, 0, 0);
@@ -74,6 +78,7 @@ const diagnostics = createDiagnostics({ scene, renderer, camera, controller, roo
 const gui = diagnostics.gui;
 addAICoreGui(gui, core);
 addSpotLightGui(gui, spots, renderer);
+addMaterialsGui(gui, room.userData.materials, scene, ROOM);
 const baseFolder = gui.addFolder('Luz base');
 baseFolder.add(hemi, 'intensity', 0, 2).name('intensidade');
 baseFolder.addColor(hemi, 'color').name('cor do céu');
