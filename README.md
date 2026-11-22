@@ -71,6 +71,11 @@ O movimento não depende do frame rate: todas as velocidades estão em m/s ou ra
 - Tubos de resfriamento com o pulso do fluido animado por offset de UV, em sentidos opostos no circuito frio e no quente ([src/cooling.js](src/cooling.js)).
 - Animações dos robôs com `AnimationMixer`, com transição suave (`crossFadeTo`) entre Idle e Walking no robô que segue o jogador.
 
+### M4: finalização
+- Bloom com `EffectComposer` + `UnrealBloomPass` + `OutputPass`, aplicado só nas partes emissivas ([src/postprocessing.js](src/postprocessing.js)).
+- Névoa exponencial (`FogExp2`) para dar profundidade à sala ([src/main.js](src/main.js)).
+- Fitas de LED emissivas no corredor, com pulsos animados por UV em direção ao núcleo, e no perímetro do teto ([src/ledStrips.js](src/ledStrips.js)).
+
 As decisões e os valores escolhidos estão explicados em [JUSTIFICATIVAS.md](JUSTIFICATIVAS.md).
 
 ## Painel lil-gui
@@ -85,7 +90,10 @@ Tudo fica em um único painel, **Modo diagnóstico**:
 | Núcleo de IA | cor, luz, brilho, pulsação; subpasta com os materiais do núcleo |
 | SpotLights e sombras | cor, intensidade, cone, penumbra; subpasta do shadow map |
 | Materiais do ambiente | reflexos, texturas ligadas/desligadas, piso, paredes e teto |
+| Bloom (pós-processamento) | liga/desliga, força, raio e limiar do bloom |
+| Fitas de LED | cor, brilho do piso e do teto, velocidade dos pulsos |
 | Luz base | luz hemisférica e exposição |
+| Névoa | liga/desliga, densidade e cor |
 | Materiais emissivos | brilho dos LEDs e da tela do console |
 
 ## Estrutura do projeto
@@ -93,7 +101,7 @@ Tudo fica em um único painel, **Modo diagnóstico**:
 ```
 index.html            HUD com os controles e a mensagem de carregamento
 src/
-  main.js             cena, renderer, câmera, luzes base e loop principal (integração)
+  main.js             cena, renderer, câmera, luz base, névoa e loop principal (integração)
   room.js             sala de 20 × 14 × 5 m
   materials.js        texturas procedurais, environment map e painel dos materiais do ambiente
   datacenter.js       fileiras de servidores, robôs e servidor em destaque
@@ -103,6 +111,8 @@ src/
   coreMaterials.js    materiais do núcleo de IA
   emissive.js         materiais emissivos dos servidores
   lighting.js         SpotLights do teto e sombras
+  ledStrips.js        fitas de LED do corredor e do teto
+  postprocessing.js   bloom (EffectComposer)
   firstPerson.js      navegação em primeira pessoa
   diagnostics.js      modo diagnóstico e renderização das duas viewports
   style.css           HUD e moldura da segunda viewport
