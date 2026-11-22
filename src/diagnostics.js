@@ -18,7 +18,9 @@ import GUI from 'lil-gui';
 // Sem isso, as linhas do frustum apareceriam na frente da câmera principal.
 const HELPER_LAYER = 1;
 
-export function createDiagnostics({ scene, renderer, camera, controller, room }) {
+// post (opcional): pós-processamento (src/postprocessing.js). Quando ligado, a viewport
+// principal é desenhada pelo EffectComposer em vez do renderer.render direto.
+export function createDiagnostics({ scene, renderer, camera, controller, room, post = null }) {
     const state = {
         // 1
         wireframe: false,
@@ -203,7 +205,13 @@ export function createDiagnostics({ scene, renderer, camera, controller, room })
         renderer.setViewport(0, 0, w, h);
         renderer.setScissor(0, 0, w, h);
         renderer.setScissorTest(true);
-        renderer.render(scene, camera);
+        // Com o bloom ligado, a cena passa pelo composer. No modo profundidade o bloom
+        // fica de fora: o z-buffer pinta de branco o que está perto, e isso "brilharia".
+        // Obs.: com o bloom ligado, os contadores incluem os passes dele (cada passe é um
+        // quadrado de tela inteira = 1 draw call e 2 triângulos). Desligar o bloom no
+        // painel mostra o custo só da cena.
+        if (post && post.params.enabled && !state.depthView) post.render();
+        else renderer.render(scene, camera);
         stats.drawCalls = renderer.info.render.calls;
         stats.triangles = renderer.info.render.triangles;
         stats.lines = renderer.info.render.lines; // em wireframe a GPU desenha linhas, não triângulos

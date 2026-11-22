@@ -9,6 +9,7 @@ import { addEmissiveGui } from './emissive.js';
 import { createCeilingSpotLights, addSpotLightGui } from './lighting.js';
 import { createEnvironment, addMaterialsGui } from './materials.js';
 import { createCoolingPipes } from './cooling.js';
+import { createPostProcessing, addBloomGui } from './postprocessing.js';
 // ------------------------------------------------------------------ cena e renderer
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x05070a);
@@ -76,13 +77,16 @@ const controller = new FirstPersonController(camera, renderer.domElement, {
 });
 
 // ------------------------------------------------------------------ modo diagnóstico
-const diagnostics = createDiagnostics({ scene, renderer, camera, controller, room: ROOM });
+// Bloom (src/postprocessing.js): o diagnóstico usa o composer para desenhar a viewport principal
+const post = createPostProcessing(renderer, scene, camera);
+const diagnostics = createDiagnostics({ scene, renderer, camera, controller, room: ROOM, post });
 
 // Painéis de iluminação e materiais no mesmo lil-gui do diagnóstico
 const gui = diagnostics.gui;
 addAICoreGui(gui, core);
 addSpotLightGui(gui, spots, renderer);
 addMaterialsGui(gui, room.userData.materials, scene, ROOM);
+addBloomGui(gui, post);
 const baseFolder = gui.addFolder('Luz base');
 baseFolder.add(hemi, 'intensity', 0, 2).name('intensidade');
 baseFolder.addColor(hemi, 'color').name('cor do céu');
@@ -114,6 +118,7 @@ addEventListener('resize', () => {
     camera.aspect = innerWidth / innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(innerWidth, innerHeight);
+    post.setSize(innerWidth, innerHeight); // os render targets do bloom acompanham a janela
 });
 
 // ------------------------------------------------------------------ loop
