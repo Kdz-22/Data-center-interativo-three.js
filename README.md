@@ -126,7 +126,6 @@ public/               modelos 3D e suas texturas
 | [Server Rack](https://opengameart.org/) (OBJ) | racks das fileiras | HippoDevelopment | CC BY-SA 4.0 |
 | [RobotExpressive](https://github.com/mrdoob/three.js/tree/dev/examples/models/gltf/RobotExpressive) (GLB) | robôs de manutenção | Tomás Laulhé, modificações de Don McCurdy | CC0 1.0 |
 | [Server Racking System](https://sketchfab.com/3d-models/server-racking-system-6fe2cacf836b4aed96c650b286db5486) (glTF) | servidor em destaque ao lado do núcleo | [wpanayides](https://sketchfab.com/mcpanayides) | CC BY 4.0 |
-| Server V2 + console (OBJ + MTL) | servidores da frente das fileiras | *a preencher* | *a preencher* |
 
 This work is based on "Server Racking System" (https://sketchfab.com/3d-models/server-racking-system-6fe2cacf836b4aed96c650b286db5486) by wpanayides (https://sketchfab.com/mcpanayides) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/).
 

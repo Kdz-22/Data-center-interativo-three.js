@@ -70,6 +70,32 @@ Casca de vidro com MeshPhysicalMaterial. É a extensão do MeshStandardMaterial 
 
 Fluxo de dados por animação de UV. A esfera ganhou um emissiveMap de faixas claras sobre fundo cinza. O fundo cinza mantém a esfera sempre acesa e as faixas são pulsos mais fortes. A animação desloca texture.offset.y com o delta do timer: a textura escorrega pela malha sem mexer em nenhum vértice, na mesma velocidade em qualquer taxa de quadros. O % 1 impede o número de crescer para sempre (com RepeatWrapping, offset 1 é igual a 0). O desenho só varia em V porque o IcosahedronGeometry gera UV esférico com uma emenda vertical em U; como a imagem é igual em qualquer U, a emenda não aparece.
 
+## Justificativa: tubos de resfriamento
+
+Posição. O sistema de resfriamento líquido fica no vão de 0,4 m entre a parte de trás dos servidores V2 e a frente dos racks (z ≈ ±3,13), que é onde ficam as conexões num data center real. Cada fileira tem dois circuitos empilhados: o de alimentação, frio (ciano), a 1,75 m, e o de retorno, quente (laranja), a 0,65 m. As cores seguem a convenção de frio = azul e quente = laranja, e o ciano é o mesmo do núcleo de IA. Em cada uma das 14 unidades há uma flange no tubo e uma derivação atravessando o vão até o servidor. Nas pontas, uma junta esférica e uma coluna sobem até o teto. Os dois circuitos terminam em x diferentes (5,8 e 6,2 m), para a coluna do circuito de baixo não atravessar o tubo de cima.
+
+Geometria. Os tubos são CylinderGeometry, que nasce ao longo do eixo Y: uma rotação de 90° em Z deita o tubo ao longo de X, e 90° em X deixa a derivação ao longo de Z. As geometrias da flange, da derivação e da junta são criadas uma vez e compartilhadas por todas as cópias, assim a GPU guarda um único buffer de vértices para cada peça.
+
+Material. Metal com metalness 0,9 e roughness 0,9 multiplicado por um roughnessMap de metal escovado, o que dá uma rugosidade média de ≈ 0,45: reflete o environment map, mas sem virar espelho. A mesma textura de riscos serve de bumpMap (bumpScale 0,4), para os riscos do escovado aparecerem com a luz. Um emissivo fraco (0,6) na cor do fluido faz o tubo parecer cheio de líquido iluminado.
+
+Fluxo animado. O emissiveMap é uma faixa clara sobre fundo escuro, repetida 8 vezes ao longo do tubo, e o gradiente não tem emenda entre uma repetição e a próxima. Na lateral do cilindro V corre ao longo do comprimento, então deslocar offset.y com o delta faz o pulso andar pelo cano, em qualquer taxa de quadros. A alimentação e o retorno andam em sentidos opostos (+ e −), como num circuito fechado de verdade, em que o fluido frio vai para os servidores e o quente volta.
+
+## Justificativa: materiais dos modelos
+
+UV por projeção em caixa. Os OBJs do rack (HippoDevelopment) não têm coordenadas de textura, então nenhum mapa podia ser aplicado. A função boxProjectUV (src/loaders.js) gera o UV a partir da posição de cada vértice: ela olha qual eixo domina a normal e projeta no plano perpendicular a ele (normal em X usa Z e Y, normal em Y usa X e Z, normal em Z usa X e Y). Como o OBJLoader gera geometria não indexada, cada face tem os próprios vértices e normais, e a troca de plano acontece exatamente nas arestas, sem esticar a textura. A escala 0,5 deixa os riscos do metal num tamanho proporcional ao rack.
+
+Metal escovado. Uma textura procedural de linhas horizontais em tons de cinza (createBrushedMetal) é usada ao mesmo tempo como bumpMap e como roughnessMap: os riscos aparecem em relevo e cada risco reflete um pouco diferente, que é o que caracteriza o escovado. As cores seguem a ideia do modelo original: carcaça do rack em azul-petróleo, servidores pretos e detalhes em verde escuro, com metalness diferente para cada parte.
+
+Conversão do console para PBR. O MTLLoader cria MeshPhongMaterial, que não tem roughness nem metalness e não reage ao environment map do mesmo jeito que o resto da cena. O material console_auv do Server V2 foi trocado por um MeshStandardMaterial que mantém a textura original e ganha o roughnessMap de metal escovado. A troca é feita antes de aplicar o emissivo, para o painel do lil-gui apontar para o material novo. Com o material PBR e o environment map, a tela e os LEDs ficaram mais claros, e as intensidades emissivas foram reduzidas para 0,33 (LEDs) e 0,64 (console) para não estourarem.
+
+## Justificativa: animações dos robôs
+
+AnimationMixer. O RobotExpressive já vem com as animações (clips) no GLB. Cada robô tem o próprio AnimationMixer, atualizado no loop com o delta do timer, então a animação anda na mesma velocidade em qualquer taxa de quadros. Os robôs são clonados com SkeletonUtils.clone, porque o clone() comum copiaria a malha, mas os ossos continuariam presos ao esqueleto do original. Cada animação começa num instante aleatório do clip, para os robôs não ficarem sincronizados.
+
+Robô parado. Um robô fica em Idle ao lado do núcleo, a 2,4 m do centro (o pedestal tem 1,5 m de raio), como se estivesse monitorando a IA.
+
+Robô que segue o visitante. O segundo robô gira e anda até a câmera, a 1,4 m/s. A distância usa só X e Z, para o robô não tentar subir até a altura dos olhos. Ele usa histerese: começa a andar quando a câmera está a mais de 2,5 m e só para abaixo de 1,8 m. Com um limite único, perto da borda ele ficaria alternando entre andar e parar a cada quadro. A troca entre Idle e Walking usa crossFadeTo de 0,3 s, que mistura os dois clips em vez de trocar de pose de uma vez. A rotação é limitada a 4 rad/s, e a diferença de ângulo é mantida entre −π e π (euclideanModulo), para o robô girar sempre pelo lado mais curto, em vez de dar uma volta inteira quando o ângulo passa de π para −π. Como o projeto não tem colisão, o robô atravessa os racks se o visitante sair do corredor.
+
 ## Justificativa: bloom, névoa e fitas de LED
 
 Bloom. O material emissivo deixa o próprio objeto claro, mas não cria o halo que uma luz forte tem quando vista por um olho ou uma câmera. O bloom simula esse halo, e é ele que faz o núcleo, os LEDs, os painéis do teto e o fluido dos tubos parecerem acesos de verdade. Usamos o EffectComposer com três passes (src/postprocessing.js). O RenderPass desenha a cena num render target HalfFloat, que guarda valores acima de 1 (HDR) sem cortar. O UnrealBloomPass separa os pixels acima do limiar, borra essa imagem em vários tamanhos e soma de volta por cima. O OutputPass aplica o tone mapping ACES e a conversão para sRGB; com o composer, essa etapa precisa ser o último passe, porque o renderer só a faz sozinho quando desenha direto na tela.
