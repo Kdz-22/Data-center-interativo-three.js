@@ -12,7 +12,17 @@ import { createCoolingPipes } from './cooling.js';
 import { createPostProcessing, addBloomGui } from './postprocessing.js';
 // ------------------------------------------------------------------ cena e renderer
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x05070a);
+const BG_COLOR = 0x05070a;
+scene.background = new THREE.Color(BG_COLOR);
+
+// Névoa exponencial: a cor de cada pixel vai se misturando com a cor da névoa
+// conforme a distância até a câmera. fator = 1 - e^(-(densidade · distância)²)
+// Com densidade 0,03: a 5 m quase nada (2%), a 10 m ~9%, no fundo do corredor (~18 m) ~25%.
+// O fundo da sala fica levemente "no ar", o que dá profundidade e o clima de sala
+// refrigerada, sem esconder o núcleo. A cor é a mesma do fundo, para não aparecer emenda.
+// FogExp2 (e não Fog linear): a névoa linear tem um início e um fim fixos e cria uma
+// "parede" visível onde começa; a exponencial cresce de forma suave desde a câmera.
+scene.fog = new THREE.FogExp2(BG_COLOR, 0.03);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.toneMapping = THREE.ACESFilmicToneMapping; // evita o emissivo estourar em branco
@@ -91,6 +101,14 @@ const baseFolder = gui.addFolder('Luz base');
 baseFolder.add(hemi, 'intensity', 0, 2).name('intensidade');
 baseFolder.addColor(hemi, 'color').name('cor do céu');
 baseFolder.add(renderer, 'toneMappingExposure', 0.2, 3).name('exposição');
+const fogFolder = gui.addFolder('Névoa');
+const fogState = { enabled: true };
+const fog = scene.fog;
+// Trocar scene.fog entre o objeto e null recompila os shaders (o código da névoa
+// entra ou sai do shader). É só um clique no painel, não acontece a cada quadro.
+fogFolder.add(fogState, 'enabled').name('ligada').onChange((on) => { scene.fog = on ? fog : null; });
+fogFolder.add(fog, 'density', 0, 0.1, 0.001).name('densidade');
+fogFolder.addColor(fog, 'color').name('cor');
 // ------------------------------------------------------------------ HUD
 const hud = document.getElementById('hud');
 const status = document.getElementById('status');

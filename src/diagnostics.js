@@ -236,7 +236,15 @@ export function createDiagnostics({ scene, renderer, camera, controller, room, p
             // Sem isto o Three.js os recalcularia aqui de novo (dobrando o custo das sombras).
             const shadowAutoUpdate = renderer.shadowMap.autoUpdate;
             renderer.shadowMap.autoUpdate = false;
+            // A câmera de cima está a 30 m do piso: com a névoa, a planta inteira
+            // ficaria apagada. A névoa é zerada só durante esta viewport.
+            // Zeramos a densidade em vez de tirar scene.fog: tirar a névoa obriga cada
+            // material a trocar de shader (com e sem névoa) duas vezes por quadro;
+            // mudar a densidade é só um uniform.
+            const fogDensity = scene.fog?.density;
+            if (scene.fog) scene.fog.density = 0;
             renderer.render(scene, topCamera);
+            if (scene.fog) scene.fog.density = fogDensity;
             renderer.shadowMap.autoUpdate = shadowAutoUpdate;
         }
         renderer.setScissorTest(false);
