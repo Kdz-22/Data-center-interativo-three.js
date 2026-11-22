@@ -10,6 +10,7 @@ import { createCeilingSpotLights, addSpotLightGui } from './lighting.js';
 import { createEnvironment, addMaterialsGui } from './materials.js';
 import { createCoolingPipes } from './cooling.js';
 import { createPostProcessing, addBloomGui } from './postprocessing.js';
+import { createLedStrips, addLedGui } from './ledStrips.js';
 // ------------------------------------------------------------------ cena e renderer
 const scene = new THREE.Scene();
 const BG_COLOR = 0x05070a;
@@ -65,6 +66,9 @@ scene.add(room);
 // Sistema de resfriamento líquido: tubos frio/quente entre os servidores (src/cooling.js)
 const cooling = createCoolingPipes(ROOM);
 scene.add(cooling.group);
+// Fitas de LED no corredor e no perímetro do teto (src/ledStrips.js)
+const leds = createLedStrips(ROOM);
+scene.add(leds.group);
 // Reflexos dos materiais PBR (environment map pré-filtrado, ver src/materials.js)
 createEnvironment(renderer, scene);
 // Núcleo de IA no fundo do corredor (-X), de frente para o ponto onde a câmera nasce
@@ -97,6 +101,7 @@ addAICoreGui(gui, core);
 addSpotLightGui(gui, spots, renderer);
 addMaterialsGui(gui, room.userData.materials, scene, ROOM);
 addBloomGui(gui, post);
+addLedGui(gui, leds);
 const baseFolder = gui.addFolder('Luz base');
 baseFolder.add(hemi, 'intensity', 0, 2).name('intensidade');
 baseFolder.addColor(hemi, 'color').name('cor do céu');
@@ -156,6 +161,7 @@ renderer.setAnimationLoop(() => {
     follower?.update(delta, camera.position); // robô que segue o jogador
     core.update(timer.getElapsed(), delta);   // pulsação, anéis e fluxo de dados do núcleo
     cooling.update(delta);                    // fluxo nos tubos de resfriamento
+    leds.update(delta);                       // pulsos das fitas de LED do corredor
 
     // 2) ...e só depois desenha. Se alguma atualização viesse depois do render,
     // ela só apareceria na tela no quadro seguinte (um quadro de atraso).
