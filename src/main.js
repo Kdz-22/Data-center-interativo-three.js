@@ -51,6 +51,7 @@ const spots = createCeilingSpotLights(scene, ROOM);
 // ------------------------------------------------------------------ sala (ambiente base)
 const room = createRoom();
 scene.add(room);
+// Sistema de resfriamento líquido: tubos frio/quente entre os servidores (src/cooling.js)
 const cooling = createCoolingPipes(ROOM);
 scene.add(cooling.group);
 // Reflexos dos materiais PBR (environment map pré-filtrado, ver src/materials.js)
@@ -77,7 +78,7 @@ const controller = new FirstPersonController(camera, renderer.domElement, {
 // ------------------------------------------------------------------ modo diagnóstico
 const diagnostics = createDiagnostics({ scene, renderer, camera, controller, room: ROOM });
 
-// Painéis de iluminação no mesmo lil-gui do diagnóstico
+// Painéis de iluminação e materiais no mesmo lil-gui do diagnóstico
 const gui = diagnostics.gui;
 addAICoreGui(gui, core);
 addSpotLightGui(gui, spots, renderer);
@@ -126,15 +127,16 @@ renderer.setAnimationLoop(() => {
     timer.update();
     const delta = timer.getDelta();
 
+    // 1) Atualiza tudo o que se move neste quadro...
     controller.update(delta);
     for (const m of mixers) m.update(delta);
+    follower?.update(delta, camera.position); // robô que segue o jogador
+    core.update(timer.getElapsed(), delta);   // pulsação, anéis e fluxo de dados do núcleo
+    cooling.update(delta);                    // fluxo nos tubos de resfriamento
 
-    follower?.update(delta, camera.position);
-
-    core.update(timer.getElapsed(), delta);
+    // 2) ...e só depois desenha. Se alguma atualização viesse depois do render,
+    // ela só apareceria na tela no quadro seguinte (um quadro de atraso).
     diagnostics.render(delta);
-
-    cooling.update(delta);
 });
 
 // Acesso pelo console do navegador para depuração (ex.: __app.camera.position)

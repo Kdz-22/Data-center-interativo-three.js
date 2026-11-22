@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Data center futurista explorável em primeira pessoa, feito em Three.js + Vite (Computação Gráfica – IFSP SJBV)",
   "license": "ISC",
-  "author": "",
+  "author": "Letícia Rosa Teles e Kevin Domingues Zili",
   "type": "module",
   "scripts": {
     "dev": "vite",
